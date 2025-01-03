@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>ساعة الكلمات العربية</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #1a1a1a;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        
+        .clock-container {
+            width: 800px;
+            height: 600px;
+            background-color: #1f2937;
+            padding: 40px;
+            position: relative;
+            box-shadow: 0 0 40px rgba(0,0,0,0.5);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .word-grid {
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(7, 1fr);
+            gap: 8px;
+            padding: 20px;
+            background-color: #111827;
+            border-radius: 5px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.3);
+        }
+        
+        .word {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255, 255, 255, 0.1);
+            font-size: 18px;
+            transition: all 0.5s ease;
+            text-align: center;
+            padding: 8px;
+        }
+        
+        .word::before {
+            content: attr(data-index);
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            font-size: 8px;
+            color: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        
+        .active {
+            color: white;
+            text-shadow: 0 0 10px #fff,
+                       0 0 20px #fff,
+                       0 0 30px #e60073,
+                       0 0 40px #e60073;
+        }
+
+        .base-word {
+            color: white;
+            text-shadow: 0 0 10px rgba(255,255,255,0.8);
+        }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(31, 41, 55, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+        }
+        
+        .time-input {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        input[type="number"] {
+            width: 70px;
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 16px;
+            text-align: center;
+        }
+        
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background: #3b82f6;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0 5px;
+        }
+        
+        button:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+        }
+
+        #time-display {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(31, 41, 55, 0.95);
+            padding: 15px 30px;
+            color: white;
+            border-radius: 8px;
+            font-size: 24px;
+            font-weight: bold;
+            direction: ltr;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <div class="time-input">
+            <label>الساعة:</label>
+            <input type="number" id="hourInput" min="1" max="12" value="12">
+            <label>الدقائق:</label>
+            <input type="number" id="minuteInput" min="0" max="59" value="0">
+        </div>
+        <div>
+            <button onclick="setCustomTime()">ضبط الوقت</button>
+            <button onclick="resetToCurrentTime()">الوقت الحالي</button>
+            <button onclick="runTests()">اختبار</button>
+        </div>
+    </div>
+
+    <div class="clock-container">
+        <div class="word-grid" id="wordGrid"></div>
+    </div>
+
+    <div id="time-display"></div>
+
+    <script>
+        // Complete word list with 56 words
+        const wordList = [
+            {text: "الساعة", index: 0},
+            {text: "الآن", index: 1},
+            {text: "الحادية", index: 2},
+            {text: "الا", index: 3},
+            {text: "الثانية", index: 4},
+            {text: "عشر", index: 5},
+            {text: "الثانية", index: 6},
+            {text: "الواحدة", index: 7},
+            {text: "السادسة", index: 8},
+            {text: "السابعة", index: 9},
+            {text: "الثالثة", index: 10},
+            {text: "العاشرة", index: 11},
+            {text: "الخامسة", index: 12},
+            {text: "أو", index: 13},
+            {text: "الرابعة", index: 14},
+            {text: "الا", index: 15},
+            {text: "الواحدة", index: 16},
+            {text: "الا", index: 17},
+            {text: "السابعة", index: 18},
+            {text: "التاسعة", index: 19},
+            {text: "الا", index: 20},
+            {text: "العاشرة", index: 21},
+            {text: "الثامنة", index: 22},
+            {text: "السادسة", index: 23},
+            {text: "الواحدة", index: 24},
+            {text: "الحادية", index: 25},
+            {text: "الثانية", index: 26},
+            {text: "الا", index: 27},
+            {text: "عشر", index: 28},
+            {text: "و", index: 29},
+            {text: "الثامنة", index: 30},
+            {text: "الثانية", index: 31},
+            {text: "والنصف", index: 32},
+            {text: "أو", index: 33},
+            {text: "الا", index: 34},
+            {text: "والثلث", index: 35},
+            {text: "الثامنة", index: 36},
+            {text: "الا", index: 37},
+            {text: "خمس", index: 38},
+            {text: "أو", index: 39},
+            {text: "الا", index: 40},
+            {text: "الربع", index: 41},
+            {text: "من", index: 42},
+            {text: "الا", index: 43},
+            {text: "عشر", index: 44},
+            {text: "وعشر", index: 45},
+            {text: "الثالثة", index: 46},
+            {text: "والربع", index: 47},
+            {text: "و", index: 48},
+            {text: "والثلث", index: 49},
+            {text: "الثانية", index: 50},
+            {text: "وخمس", index: 51},
+            {text: "السابعة", index: 52},
+            {text: "دقائق", index: 53},
+            {text: "الا", index: 54},
+            {text: "التاسعة", index: 55}
+        ];
+
+        const timeConfigurations = {
+            12: {
+                0: [0, 1, 4, 5],               // الثانية عشر تماماً
+                5: [0, 1, 4, 5, 51, 53],      // الثانية عشر وخمس دقائق
+                10: [0, 1, 4, 5, 45, 53],      // الثانية عشر وعشر دقائق
+                15: [0, 1, 4, 5, 47],         // الثانية عشر والربع
+                20: [0, 1, 4, 5, 49],         // الثانية عشر والثلث
+                25: [0, 1, 4, 5, 32, 37, 38, 53],  // الثانية عشر والنصف إلا خمس دقائق
+                30: [0, 1, 4, 5, 32],         // الثانية عشر والنصف
+                35: [0, 1, 4, 5, 32, 51, 53], // الثانية عشر والنصف وخمس دقائق
+                40: [0, 1, 7, 34, 35],        // الواحدة إلا الثلث
+                45: [0, 1, 7, 34, 41],        // الواحدة إلا الربع
+                50: [0, 1, 7, 34, 44, 53],    // الواحدة إلا عشر دقائق
+                55: [0, 1, 7, 34, 38, 53]     // الواحدة إلا خمس دقائق
+            },
+            1: {
+                0: [0, 1, 7],                  // الواحدة تماماً
+                5: [0, 1, 7, 51, 53],         // الواحدة وخمس دقائق
+                10: [0, 1, 7, 45, 53],      // الواحدة  وعشر دقائق
+                15: [0, 1, 7, 47],            // الواحدة والربع
+                20: [0, 1, 7, 49],            // الواحدة والثلث
+                25: [0, 1, 7, 32, 37, 38, 53], // الواحدة والنصف إلا خمس دقائق
+                30: [0, 1, 7, 32],            // الواحدة والنصف
+                35: [0, 1, 7, 32, 51, 53],    // الواحدة والنصف وخمس دقائق
+                40: [0, 1, 6, 34, 35],        // الثانية إلا الثلث
+                45: [0, 1, 6, 34, 41],        // الثانية إلا الربع
+                50: [0, 1, 6, 34, 44, 53],    // الثانية إلا عشر دقائق
+                55: [0, 1, 6, 34, 38, 53]     // الثانية إلا خمس دقائق
+            },
+            2: {
+                0: [0, 1, 6],                  // الثانية تماماً
+                5: [0, 1, 6, 51, 53],         // الثانية وخمس دقائق
+                10: [0, 1, 6, 45, 53],      // الثانية  وعشر دقائق
+                15: [0, 1, 6, 47],            // الثانية والربع
+                20: [0, 1, 6, 49],            // الثانية والثلث
+                25: [0, 1, 6, 32, 37, 38, 53], // الثانية والنصف إلا خمس دقائق
+                30: [0, 1, 6, 32],            // الثانية والنصف
+                35: [0, 1, 6, 32, 51, 53],    // الثانية والنصف وخمس دقائق
+                40: [0, 1, 10, 34, 35],       // الثالثة إلا الثلث
+                45: [0, 1, 10, 34, 41],       // الثالثة إلا الربع
+                50: [0, 1, 10, 34, 44, 53],   // الثالثة إلا عشر دقائق
+                55: [0, 1, 10, 34, 38, 53]    // الثالثة إلا خمس دقائق
+            },
+            3: {
+                0: [0, 1, 10],                 // الثالثة تماماً
+                5: [0, 1, 10, 51, 53],        // الثالثة وخمس دقائق
+                10: [0, 1, 10, 45, 53],      // الثالثة  وعشر دقائق
+                15: [0, 1, 10, 47],           // الثالثة والربع
+                20: [0, 1, 10, 49],           // الثالثة والثلث
+                25: [0, 1, 10, 32, 37, 38, 53], // الثالثة والنصف إلا خمس دقائق
+                30: [0, 1, 10, 32],           // الثالثة والنصف
+                35: [0, 1, 10, 32, 51, 53],   // الثالثة والنصف وخمس دقائق
+                40: [0, 1, 14, 34, 35],       // الرابعة إلا الثلث
+                45: [0, 1, 14, 34, 41],       // الرابعة إلا الربع
+                50: [0, 1, 14, 34, 44, 53],   // الرابعة إلا عشر دقائق
+                55: [0, 1, 14, 34, 38, 53]    // الرابعة إلا خمس دقائق
+            },
+            4: {
+                0: [0, 1, 14],                 // الرابعة تماماً
+                5: [0, 1, 14, 51, 53],        // الرابعة وخمس دقائق
+                10: [0, 1, 14, 45, 53],      // الرابعة  وعشر دقائق
+                15: [0, 1, 14, 47],           // الرابعة والربع
+                20: [0, 1, 14, 49],           // الرابعة والثلث
+                25: [0, 1, 14, 32, 37, 38, 53], // الرابعة والنصف إلا خمس دقائق
+                30: [0, 1, 14, 32],           // الرابعة والنصف
+                35: [0, 1, 14, 32, 51, 53],   // الرابعة والنصف وخمس دقائق
+                40: [0, 1, 12, 34, 35],       // الخامسة إلا الثلث
+                45: [0, 1, 12, 34, 41],       // الخامسة إلا الربع
+                50: [0, 1, 12, 34, 44, 53],   // الخامسة إلا عشر دقائق
+                55: [0, 1, 12, 34, 38, 53]    // الخامسة إلا خمس دقائق
+            },
+            5: {
+                0: [0, 1, 12],                 // الخامسة تماماً
+                5: [0, 1, 12, 51, 53],        // الخامسة وخمس دقائق
+                10: [0, 1, 12, 45, 53],      // الخامسة  وعشر دقائق
+                15: [0, 1, 12, 47],           // الخامسة والربع
+                20: [0, 1, 12, 49],           // الخامسة والثلث
+                25: [0, 1, 12, 32, 37, 38, 53], // الخامسة والنصف إلا خمس دقائق
+                30: [0, 1, 12, 32],           // الخامسة والنصف
+                35: [0, 1, 12, 32, 51, 53],   // الخامسة والنصف وخمس دقائق
+                40: [0, 1, 8, 34, 35],        // السادسة إلا الثلث
+                45: [0, 1, 8, 34, 41],        // السادسة إلا الربع
+                50: [0, 1, 8, 34, 44, 53],    // السادسة إلا عشر دقائق
+                55: [0, 1, 8, 34, 38, 53]     // السادسة إلا خمس دقائق
+            },
+            6: {
+                0: [0, 1, 8],                  // السادسة تماماً
+                5: [0, 1, 8, 51, 53],         // السادسة وخمس دقائق
+                10: [0, 1, 8, 45, 53],      // السادسة  وعشر دقائق
+                15: [0, 1, 8, 47],            // السادسة والربع
+                20: [0, 1, 8, 49],            // السادسة والثلث
+                25: [0, 1, 8, 32, 37, 38, 53], // السادسة والنصف إلا خمس دقائق
+                30: [0, 1, 8, 32],            // السادسة والنصف
+                35: [0, 1, 8, 32, 51, 53],    // السادسة والنصف وخمس دقائق
+                40: [0, 1, 9, 34, 35],        // السابعة إلا الثلث
+                45: [0, 1, 9, 34, 41],        // السابعة إلا الربع
+                50: [0, 1, 9, 34, 44, 53],    // السابعة إلا عشر دقائق
+                55: [0, 1, 9, 34, 38, 53]     // السابعة إلا خمس دقائق
+            },
+            7: {
+                0: [0, 1, 9],                  // السابعة تماماً
+                5: [0, 1, 9, 51, 53],         // السابعة وخمس دقائق
+                10: [0, 1, 9, 45, 53],      // السابعة  وعشر دقائق
+                15: [0, 1, 9, 47],            // السابعة والربع
+                20: [0, 1, 9, 49],            // السابعة والثلث
+                25: [0, 1, 9, 32, 37, 38, 53], // السابعة والنصف إلا خمس دقائق
+                30: [0, 1, 9, 32],            // السابعة والنصف
+                35: [0, 1, 9, 32, 51, 53],    // السابعة والنصف وخمس دقائق
+                40: [0, 1, 22, 34, 35],       // الثامنة إلا الثلث
+                45: [0, 1, 22, 34, 41],       // الثامنة إلا الربع
+                50: [0, 1, 22, 34, 44, 53],   // الثامنة إلا عشر دقائق
+                55: [0, 1, 22, 34, 38, 53]    // الثامنة إلا خمس دقائق
+            },
+            8: {
+                0: [0, 1, 22],                 // الثامنة تماماً
+                5: [0, 1, 22, 51, 53],        // الثامنة وخمس دقائق
+                10: [0, 1, 22, 45, 53],      // الثامنة  وعشر دقائق
+                15: [0, 1, 22, 47],           // الثامنة والربع
+                20: [0, 1, 22, 49],           // الثامنة والثلث
+                25: [0, 1, 22, 32, 37, 38, 53], // الثامنة والنصف إلا خمس دقائق
+                30: [0, 1, 22, 32],           // الثامنة والنصف
+                35: [0, 1, 22, 32, 51, 53],   // الثامنة والنصف وخمس دقائق
+                40: [0, 1, 19, 34, 35],       // التاسعة إلا الثلث
+                45: [0, 1, 19, 34, 41],       // التاسعة إلا الربع
+                50: [0, 1, 19, 34, 44, 53],   // التاسعة إلا عشر دقائق
+                55: [0, 1, 19, 34, 38, 53]    // التاسعة إلا خمس دقائق
+            },
+            9: {
+                0: [0, 1, 19],                 // التاسعة تماماً
+                5: [0, 1, 19, 51, 53],        // التاسعة وخمس دقائق
+                10: [0, 1, 19, 45, 53],      // التاسعة  وعشر دقائق
+                15: [0, 1, 19, 47],           // التاسعة والربع
+                20: [0, 1, 19, 49],           // التاسعة والثلث
+                25: [0, 1, 19, 32, 37, 38, 53], // التاسعة والنصف إلا خمس دقائق
+                30: [0, 1, 19, 32],           // التاسعة والنصف
+                35: [0, 1, 19, 32, 51, 53],   // التاسعة والنصف وخمس دقائق
+                40: [0, 1, 11, 34, 35],       // العاشرة إلا الثلث
+                45: [0, 1, 11, 34, 41],       // العاشرة إلا الربع
+                50: [0, 1, 11, 34, 44, 53],   // العاشرة إلا عشر دقائق
+                55: [0, 1, 11, 34, 38, 53]    // العاشرة إلا خمس دقائق
+            },
+            10: {
+                0: [0, 1, 11],                 // العاشرة تماماً
+                5: [0, 1, 11, 51, 53],        // العاشرة وخمس دقائق
+                10: [0, 1, 11, 45, 53],      // العاشرة  وعشر دقائق
+                15: [0, 1, 11, 47],           // العاشرة والربع
+                20: [0, 1, 11, 49],           // العاشرة والثلث
+                25: [0, 1, 11, 32, 37, 38, 53], // العاشرة والنصف إلا خمس دقائق
+                30: [0, 1, 11, 32],           // العاشرة والنصف
+                35: [0, 1, 11, 32, 51, 53],   // العاشرة والنصف وخمس دقائق
+                40: [0, 1, 25, 34, 35],       // الحادية إلا الثلث
+                45: [0, 1, 25, 34, 41],       // الحادية إلا الربع
+                50: [0, 1, 25, 34],
+            },
+
+            11: {
+                    0: [0, 1, 2,5],                 // الحادية تماماً
+                        5: [0, 1, 2,5, 51, 53],        // الحادية عشر وخمس دقائق
+                        10: [0, 1, 2,5, 45, 53],      // العاشرة  وعشر دقائق
+                        15: [0, 1, 2,5, 47],           // الحادية والربع
+                        20: [0, 1, 2,5, 49],           // الحادية والثلث
+                        25: [0, 1, 2,5, 32, 37, 38, 53], // الحادية والنصف إلا خمس دقائق
+                        30: [0, 1, 2,5, 32],           // الحادية والنصف
+                        35: [0, 1, 2,5, 32, 51, 53],   // الحادية والنصف وخمس دقائق
+                        40: [0, 1, 4, 34, 35],        // الثانية إلا الثلث
+                        45: [0, 1, 4, 34, 41],        // الثانية إلا الربع
+                        50: [0, 1, 4, 34, 44, 53],    // الثانية إلا عشر دقائق
+                        55: [0, 1, 4, 34, 38, 53]     // الثانية إلا خمس دقائق
+            },
+        };
+        let customTimeMode = false;
+
+        function initializeGrid() {
+            const grid = document.getElementById('wordGrid');
+            wordList.forEach(word => {
+                const wordSpan = document.createElement('span');
+                wordSpan.textContent = word.text;
+                wordSpan.className = 'word';
+                wordSpan.setAttribute('data-index', word.index);
+                if (word.index <= 1) {
+                    wordSpan.classList.add('base-word');
+                }
+                grid.appendChild(wordSpan);
+            });
+        }
+
+        function clearActiveWords() {
+            document.querySelectorAll('.word').forEach(word => {
+                if (!word.classList.contains('base-word')) {
+                    word.classList.remove('active');
+                }
+            });
+        }
+
+        function activateWordsByIndices(indices) {
+            clearActiveWords();
+            indices.forEach(index => {
+                const element = document.querySelector(`[data-index="${index}"]`);
+                if (element && !element.classList.contains('base-word')) {
+                    element.classList.add('active');
+                }
+            });
+        }
+
+        function getNearestMinuteConfiguration(minutes) {
+            const times = Object.keys(timeConfigurations[12]).map(Number);
+            const nearestTime = times.reduce((prev, curr) => {
+                return (Math.abs(curr - minutes) < Math.abs(prev - minutes) ? curr : prev);
+            });
+            return nearestTime.toString();
+        }
+
+        function updateClock(testHour = null, testMinute = null) {
+            const now = new Date();
+            let hours = testHour !== null ? testHour : now.getHours();
+            let minutes = testMinute !== null ? testMinute : now.getMinutes();
+
+            document.getElementById('time-display').textContent = 
+                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+
+            if (hours > 12) hours -= 12;
+            if (hours === 0) hours = 12;
+
+            const nearestMinute = getNearestMinuteConfiguration(minutes);
+            const activeIndices = timeConfigurations[hours][nearestMinute];
+            
+            if (activeIndices) {
+                activateWordsByIndices(activeIndices);
+            }
+
+            document.getElementById('hourInput').value = hours;
+            document.getElementById('minuteInput').value = minutes;
+        }
+
+        function setCustomTime() {
+            const hours = parseInt(document.getElementById('hourInput').value) || 12;
+            const minutes = parseInt(document.getElementById('minuteInput').value) || 0;
+            
+            if (hours < 1 || hours > 12 || minutes < 0 || minutes > 59) {
+                alert('الرجاء إدخال وقت صحيح');
+                return;
+            }
+            
+            customTimeMode = true;
+            updateClock(hours, minutes);
+        }
+
+        function resetToCurrentTime() {
+            customTimeMode = false;
+            updateClock();
+        }
+
+        function runTests() {
+            const testTimes = [
+                { h: 12, m: 0 },
+                { h: 12, m: 15 },
+                { h: 12, m: 30 },
+                { h: 12, m: 45 },
+                { h: 1, m: 0 },
+                { h: 1, m: 15 },
+                { h: 1, m: 30 },
+                { h: 1, m: 45 }
+            ];
+
+            let currentTest = 0;
+            customTimeMode = true;
+
+            function runNextTest() {
+                if (currentTest >= testTimes.length) {
+                    customTimeMode = false;
+                    return;
+                }
+
+                const test = testTimes[currentTest];
+                updateClock(test.h, test.m);
+                currentTest++;
+                setTimeout(runNextTest, 3000);
+            }
+
+            runNextTest();
+        }
+
+        initializeGrid();
+        resetToCurrentTime();
+
+        setInterval(() => {
+            if (!customTimeMode) {
+                resetToCurrentTime();
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
