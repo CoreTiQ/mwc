@@ -1,0 +1,334 @@
+#include <Wire.h>
+#include <RTClib.h>
+#include <FastLED.h>
+#include <EEPROM.h>
+
+#define HOUR_BUTTON    2
+#define MINUTE_BUTTON  3
+#define BRIGHT_BUTTON  4
+#define COLOR_BUTTON   5
+#define LED_PIN        6
+#define NUM_LEDS      56
+#define UPDATE_INTERVAL 500
+#define BUTTON_DEBOUNCE_DELAY 50
+
+RTC_DS1307 rtc;
+CRGB leds[NUM_LEDS];
+
+const uint8_t BRIGHTNESS_LEVELS[] = {51, 102, 153, 204, 255};
+#define NUM_BRIGHTNESS_LEVELS (sizeof(BRIGHTNESS_LEVELS)/sizeof(BRIGHTNESS_LEVELS[0]))
+
+struct ColorPair {
+    CRGB base;
+    CRGB active;
+} PROGMEM;
+
+const ColorPair colorPairs[] PROGMEM = {
+    {CRGB(255, 100, 100), CRGB(255, 0, 0)},    // أحمر
+    {CRGB(0, 255, 0), CRGB(0, 200, 0)},        // أخضر
+    {CRGB(0, 0, 255), CRGB(0, 0, 200)},        // أزرق
+    {CRGB(255, 255, 0), CRGB(200, 200, 0)},    // أصفر
+    {CRGB(255, 0, 255), CRGB(200, 0, 200)}     // وردي
+};
+#define NUM_COLORS (sizeof(colorPairs)/sizeof(colorPairs[0]))
+
+struct Settings {
+    uint8_t brightnessIndex;
+    uint8_t colorIndex;
+} settings;
+
+const uint8_t TIME_CONFIGS[][12] PROGMEM = {
+ // ===== الساعة 1 =====
+    {0, 1, 7, 255},                       // 1:00 - الساعة الآن الواحدة
+    {0, 1, 7, 51, 53, 255},              // 1:05
+    {0, 1, 7, 45, 255},                  // 1:10
+    {0, 1, 7, 47, 255},                  // 1:15
+    {0, 1, 7, 49, 255},                  // 1:20
+    {0, 1, 7, 32, 37, 38, 53, 255},     // 1:25
+    {0, 1, 7, 32, 255},                  // 1:30
+    {0, 1, 7, 32, 51, 53, 255},         // 1:35
+    {0, 1, 6, 34, 35, 255},             // 1:40
+    {0, 1, 6, 34, 41, 255},             // 1:45
+    {0, 1, 6, 34, 44, 53, 255},         // 1:50
+    {0, 1, 6, 34, 38, 53, 255},         // 1:55
+
+    // ===== الساعة 2 =====
+    {0, 1, 6, 255},                       // 2:00 - الساعة الآن الثانية
+    {0, 1, 6, 51, 53, 255},              // 2:05
+    {0, 1, 6, 45, 255},                  // 2:10
+    {0, 1, 6, 47, 255},                  // 2:15
+    {0, 1, 6, 49, 255},                  // 2:20
+    {0, 1, 6, 32, 37, 38, 53, 255},     // 2:25
+    {0, 1, 6, 32, 255},                  // 2:30
+    {0, 1, 6, 32, 51, 53, 255},         // 2:35
+    {0, 1, 10, 34, 35, 255},            // 2:40
+    {0, 1, 10, 34, 41, 255},            // 2:45
+    {0, 1, 10, 34, 44, 53, 255},        // 2:50
+    {0, 1, 10, 34, 38, 53, 255},        // 2:55
+
+    // ===== الساعة 3 =====
+    {0, 1, 10, 255},                      // 3:00 - الساعة الآن الثالثة
+    {0, 1, 10, 51, 53, 255},             // 3:05
+    {0, 1, 10, 45, 255},                 // 3:10
+    {0, 1, 10, 47, 255},                 // 3:15
+    {0, 1, 10, 49, 255},                 // 3:20
+    {0, 1, 10, 32, 37, 38, 53, 255},    // 3:25
+    {0, 1, 10, 32, 255},                 // 3:30
+    {0, 1, 10, 32, 51, 53, 255},        // 3:35
+    {0, 1, 14, 34, 35, 255},            // 3:40
+    {0, 1, 14, 34, 41, 255},            // 3:45
+    {0, 1, 14, 34, 44, 53, 255},        // 3:50
+    {0, 1, 14, 34, 38, 53, 255},        // 3:55
+
+    // ===== الساعة 4 =====
+    {0, 1, 14, 255},                      // 4:00 - الساعة الآن الرابعة
+    {0, 1, 14, 51, 53, 255},             // 4:05
+    {0, 1, 14, 45, 255},                 // 4:10
+    {0, 1, 14, 47, 255},                 // 4:15
+    {0, 1, 14, 49, 255},                 // 4:20
+    {0, 1, 14, 32, 37, 38, 53, 255},    // 4:25
+    {0, 1, 14, 32, 255},                 // 4:30
+    {0, 1, 14, 32, 51, 53, 255},        // 4:35
+    {0, 1, 12, 34, 35, 255},            // 4:40
+    {0, 1, 12, 34, 41, 255},            // 4:45
+    {0, 1, 12, 34, 44, 53, 255},        // 4:50
+    {0, 1, 12, 34, 38, 53, 255},        // 4:55
+
+    // ===== الساعة 5 =====
+    {0, 1, 12, 255},                      // 5:00 - الساعة الآن الخامسة
+    {0, 1, 12, 51, 53, 255},             // 5:05
+    {0, 1, 12, 45, 255},                 // 5:10
+    {0, 1, 12, 47, 255},                 // 5:15
+    {0, 1, 12, 49, 255},                 // 5:20
+    {0, 1, 12, 32, 37, 38, 53, 255},    // 5:25
+    {0, 1, 12, 32, 255},                 // 5:30
+    {0, 1, 12, 32, 51, 53, 255},        // 5:35
+    {0, 1, 8, 34, 35, 255},             // 5:40
+    {0, 1, 8, 34, 41, 255},             // 5:45
+    {0, 1, 8, 34, 44, 53, 255},         // 5:50
+    {0, 1, 8, 34, 38, 53, 255},         // 5:55
+
+    // ===== الساعة 6 =====
+    {0, 1, 8, 255},                       // 6:00 - الساعة الآن السادسة
+    {0, 1, 8, 51, 53, 255},              // 6:05
+    {0, 1, 8, 45, 255},                  // 6:10
+    {0, 1, 8, 47, 255},                  // 6:15
+    {0, 1, 8, 49, 255},                  // 6:20
+    {0, 1, 8, 32, 37, 38, 53, 255},     // 6:25
+    {0, 1, 8, 32, 255},                  // 6:30
+    {0, 1, 8, 32, 51, 53, 255},         // 6:35
+    {0, 1, 9, 34, 35, 255},             // 6:40
+    {0, 1, 9, 34, 41, 255},             // 6:45
+    {0, 1, 9, 34, 44, 53, 255},         // 6:50
+    {0, 1, 9, 34, 38, 53, 255},         // 6:55
+
+    // ===== الساعة 7 =====
+    {0, 1, 9, 255},                       // 7:00 - الساعة الآن السابعة
+    {0, 1, 9, 51, 53, 255},              // 7:05
+    {0, 1, 9, 45, 255},                  // 7:10
+    {0, 1, 9, 47, 255},                  // 7:15
+    {0, 1, 9, 49, 255},                  // 7:20
+    {0, 1, 9, 32, 37, 38, 53, 255},     // 7:25
+    {0, 1, 9, 32, 255},                  // 7:30
+    {0, 1, 9, 32, 51, 53, 255},         // 7:35
+    {0, 1, 22, 34, 35, 255},            // 7:40
+    {0, 1, 22, 34, 41, 255},            // 7:45
+    {0, 1, 22, 34, 44, 53, 255},        // 7:50
+    {0, 1, 22, 34, 38, 53, 255},        // 7:55
+
+    // ===== الساعة 8 =====
+    {0, 1, 22, 255},                      // 8:00 - الساعة الآن الثامنة
+    {0, 1, 22, 51, 53, 255},             // 8:05
+    {0, 1, 22, 45, 255},                 // 8:10
+    {0, 1, 22, 47, 255},                 // 8:15
+    {0, 1, 22, 49, 255},                 // 8:20
+    {0, 1, 22, 32, 37, 38, 53, 255},    // 8:25
+    {0, 1, 22, 32, 255},                 // 8:30
+    {0, 1, 22, 32, 51, 53, 255},        // 8:35
+    {0, 1, 19, 34, 35, 255},            // 8:40
+    {0, 1, 19, 34, 41, 255},            // 8:45
+    {0, 1, 19, 34, 44, 53, 255},        // 8:50
+    {0, 1, 19, 34, 38, 53, 255},        // 8:55
+
+    // ===== الساعة 9 =====
+    {0, 1, 19, 255},                      // 9:00 - الساعة الآن التاسعة
+    {0, 1, 19, 51, 53, 255},             // 9:05
+    {0, 1, 19, 45, 255},                 // 9:10
+    {0, 1, 19, 47, 255},                 // 9:15
+    {0, 1, 19, 49, 255},                 // 9:20
+    {0, 1, 19, 32, 37, 38, 53, 255},    // 9:25
+    {0, 1, 19, 32, 255},                 // 9:30
+    {0, 1, 19, 32, 51, 53, 255},        // 9:35
+    {0, 1, 11, 34, 35, 255},            // 9:40
+    {0, 1, 11, 34, 41, 255},            // 9:45
+    {0, 1, 11, 34, 44, 53, 255},        // 9:50
+    {0, 1, 11, 34, 38, 53, 255},        // 9:55
+
+    // ===== الساعة 10 =====
+    {0, 1, 11, 255},                      // 10:00 - الساعة الآن العاشرة
+    {0, 1, 11, 51, 53, 255},             // 10:05
+    {0, 1, 11, 45, 255},                 // 10:10
+    {0, 1, 11, 47, 255},                 // 10:15
+    {0, 1, 11, 49, 255},                 // 10:20
+    {0, 1, 11, 32, 37, 38, 53, 255},    // 10:25
+    {0, 1, 11, 32, 255},                 // 10:30
+    {0, 1, 11, 32, 51, 53, 255},        // 10:35
+    {0, 1, 25, 34, 35, 255},            // 10:40
+    {0, 1, 25, 34, 41, 255},            // 10:45
+    {0, 1, 25, 34, 44, 53, 255},        // 10:50
+    {0, 1, 25, 34, 38, 53, 255},        // 10:55
+
+   // ===== الساعة 11 =====
+    {0, 1, 2,5, 255},                      // 11:00 - الساعة الآن الحادية عشرة
+    {0, 1, 2,5, 51, 53, 255},             // 11:05
+    {0, 1, 2,5, 45, 255},                 // 11:10
+    {0, 1, 2,5, 47, 255},                 // 11:15
+    {0, 1, 2,5, 49, 255},                 // 11:20
+    {0, 1, 2,5, 32, 37, 38, 53, 255},    // 11:25
+    {0, 1, 2,5, 32, 255},                 // 11:30
+    {0, 1, 2,5, 32, 51, 53, 255},        // 11:35
+    {0, 1, 4, 34, 35, 255},             // 11:40
+    {0, 1, 4, 34, 41, 255},             // 11:45
+    {0, 1, 4, 34, 44, 53, 255},         // 11:50
+    {0, 1, 4, 34, 38, 53, 255},          // 11:55
+
+   // ===== الساعة 12 =====
+    {0, 1, 4, 5, 255},                    // 12:00 - الساعة الآن الثانية عشر
+    {0, 1, 4, 5, 51, 53, 255},           // 12:05 - الساعة الآن الثانية عشر وخمس دقائق
+    {0, 1, 4, 5, 45, 255},               // 12:10 - الساعة الآن الثانية عشر وعشر
+    {0, 1, 4, 5, 47, 255},               // 12:15 - الساعة الآن الثانية عشر والربع
+    {0, 1, 4, 5, 49, 255},               // 12:20 - الساعة الآن الثانية عشر والثلث
+    {0, 1, 4, 5, 32, 37, 38, 53, 255},  // 12:25 - الساعة الآن الثانية عشر والنصف الا خمس دقائق
+    {0, 1, 4, 5, 32, 255},               // 12:30 - الساعة الآن الثانية عشر والنصف
+    {0, 1, 4, 5, 32, 51, 53, 255},      // 12:35
+    {0, 1, 7, 34, 35, 255},              // 12:40
+    {0, 1, 7, 34, 41, 255},              // 12:45
+    {0, 1, 7, 34, 44, 53, 255},          // 12:50
+    {0, 1, 7, 34, 38, 53, 255}          // 12:55
+
+
+};
+
+uint32_t lastButtonCheck = 0;
+bool buttonStates[] = {HIGH, HIGH, HIGH, HIGH};
+bool lastButtonStates[] = {HIGH, HIGH, HIGH, HIGH};
+
+void saveSettings() {
+    EEPROM.put(0, settings);
+}
+
+void loadSettings() {
+    EEPROM.get(0, settings);
+    if(settings.brightnessIndex >= NUM_BRIGHTNESS_LEVELS) settings.brightnessIndex = 2;
+    if(settings.colorIndex >= NUM_COLORS) settings.colorIndex = 0;
+}
+
+void setup() {
+    Serial.begin(9600);
+    
+    pinMode(HOUR_BUTTON, INPUT_PULLUP);
+    pinMode(MINUTE_BUTTON, INPUT_PULLUP);
+    pinMode(BRIGHT_BUTTON, INPUT_PULLUP);
+    pinMode(COLOR_BUTTON, INPUT_PULLUP);
+    
+    FastLED.addLeds<WS2812B, LED_PIN, GRB>(leds, NUM_LEDS);
+    loadSettings();
+    FastLED.setBrightness(BRIGHTNESS_LEVELS[settings.brightnessIndex]);
+    
+    if (!rtc.begin()) {
+        Serial.println(F("RTC not found"));
+        while (1);
+    }
+
+    if (!rtc.isrunning()) {
+        rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+    }
+    
+    testDisplay();
+}
+
+void testDisplay() {
+    // اختبار جميع المصابيح
+    fill_solid(leds, NUM_LEDS, colorPairs[settings.colorIndex].active);
+    FastLED.show();
+    delay(1000);
+    
+    FastLED.clear();
+    FastLED.show();
+    delay(1000);
+    
+    // اختبار كل LED على حدة
+    for (int i = 0; i < NUM_LEDS; i++) {
+        FastLED.clear();
+        leds[i] = colorPairs[settings.colorIndex].active;
+        FastLED.show();
+        delay(100);
+    }
+}
+
+void checkButtons() {
+    if (millis() - lastButtonCheck < BUTTON_DEBOUNCE_DELAY) return;
+    lastButtonCheck = millis();
+
+    const uint8_t buttons[] = {HOUR_BUTTON, MINUTE_BUTTON, BRIGHT_BUTTON, COLOR_BUTTON};
+    
+    for(uint8_t i = 0; i < 4; i++) {
+        buttonStates[i] = digitalRead(buttons[i]);
+        if(buttonStates[i] == LOW && lastButtonStates[i] == HIGH) {
+            handleButton(i);
+        }
+        lastButtonStates[i] = buttonStates[i];
+    }
+}
+
+void handleButton(uint8_t button) {
+    DateTime now;
+    switch(button) {
+        case 0: // HOUR
+            now = rtc.now();
+            rtc.adjust(DateTime(now.year(), now.month(), now.day(), 
+                      (now.hour() + 1) % 24, now.minute(), now.second()));
+            break;
+        case 1: // MINUTE
+            now = rtc.now();
+            rtc.adjust(DateTime(now.year(), now.month(), now.day(),
+                      now.hour(), ((now.minute() + 5) / 5 * 5) % 60, now.second()));
+            break;
+        case 2: // BRIGHTNESS
+            settings.brightnessIndex = (settings.brightnessIndex + 1) % NUM_BRIGHTNESS_LEVELS;
+            FastLED.setBrightness(BRIGHTNESS_LEVELS[settings.brightnessIndex]);
+            saveSettings();
+            break;
+        case 3: // COLOR
+            settings.colorIndex = (settings.colorIndex + 1) % NUM_COLORS;
+            saveSettings();
+            break;
+    }
+}
+
+void displayTime(uint8_t hours, uint8_t minutes) {
+    FastLED.clear();
+    
+    if (hours > 12) hours -= 12;
+    if (hours == 0) hours = 12;
+    
+    uint16_t configIndex = ((hours - 1) * 12) + (minutes / 5);
+    const uint8_t* config = TIME_CONFIGS[configIndex];
+    ColorPair currentColors = colorPairs[settings.colorIndex];
+    
+    for (uint8_t i = 0; pgm_read_byte(&config[i]) != 255; i++) {
+        uint8_t ledIndex = pgm_read_byte(&config[i]);
+        leds[ledIndex] = (ledIndex <= 1) ? currentColors.base : currentColors.active;
+    }
+    
+    FastLED.show();
+}
+
+void loop() {
+    checkButtons();
+    
+    EVERY_N_MILLISECONDS(UPDATE_INTERVAL) {
+        DateTime now = rtc.now();
+        displayTime(now.hour(), now.minute());
+    }
+}
