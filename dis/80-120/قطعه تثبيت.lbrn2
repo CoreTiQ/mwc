@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightBurnProject AppVersion="2.0.05" DeviceName="Ruida 6445G" FormatVersion="1" MaterialHeight="0" MirrorX="True" MirrorY="True">
+    <Thumbnail Source="iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAYAAABccqhmAAAACXBIWXMAAAsTAAALEwEAmpwYAAAEx0lEQVR4nO3cv45NbRyG4XePCRGCrVAQlUKCjE6ikjgI9TSqOQDnoSEmSrUTUEokWoVGRyQUYzLjf7H3dxDWWPnc13UAT37Fzl282VmL9Xq9HkDSxtwHAPMRAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAgTAAjb/P79+3j//v04d+7c3LcAf8n+/v64fPny2Hz27NnY2dkZ58+fn/sm4C/Z29sbu7u7Y/PatWvj1q1b4+XLl3PfBPwlt2/fHlevXvUGAGUCAGECAGECAGECAGECAGECAGECAGECAGGbcx8wpTdv3oy3b9+OS5cuTbq7t7c3Tp06Ne7evTvpLkfjxYsX4+fPn2O5XE66++HDh3H9+vVx48aNSXfn9E8F4NGjR+P58+fjypUrk+5++vRpLJfL8fr160l3ORoPHjwYh4eH48KFC5Puvnv3bty7d288fPhw0t05/VMBuHnz5litVuPx48eT7j59+nS8evVq0k2OztbW1rhz587Y3t6edPf+/ftja2tr0s25eQOAMAGAMAGAMAGAMAGAMAGAMAGAsMWTJ0/WOzs74+zZs3Pf8se+fv06fv36NRaLxaS76/V6HDt2zJeT/ye+fPkyVqvVkfwOTpw4MU6fPj3p7hz29/fH7u7uWPz48WP98ePHcebMmblv+mMHBwfj8PBwnDx5ctLd379/j42Njcn/WcbR+Pz581itVuP48eOT7n779m0sl8t/IgAHBwfj4sWLY7Fer9dzHwPMwxsAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhAkAhP0HnFOJHlg9B9AAAAAASUVORK5CYII="/>
+    <VariableText>
+        <Start Value="0"/>
+        <End Value="999"/>
+        <Current Value="0"/>
+        <Increment Value="1"/>
+        <AutoAdvance Value="0"/>
+    </VariableText>
+    <UIPrefs>
+        <Optimize_ByLayer Value="0"/>
+        <Optimize_ByGroup Value="-1"/>
+        <Optimize_ByPriority Value="1"/>
+        <Optimize_WhichDirection Value="0"/>
+        <Optimize_InnerToOuter Value="1"/>
+        <Optimize_ByDirection Value="0"/>
+        <Optimize_ReduceTravel Value="1"/>
+        <Optimize_HideBacklash Value="0"/>
+        <Optimize_ReduceDirChanges Value="0"/>
+        <Optimize_ChooseCorners Value="0"/>
+        <Optimize_AllowReverse Value="1"/>
+        <Optimize_RemoveOverlaps Value="0"/>
+        <Optimize_OptimalEntryPoint Value="0"/>
+        <Optimize_OverlapDist Value="0.025"/>
+    </UIPrefs>
+    <CutSetting type="Cut">
+        <index Value="0"/>
+        <name Value="C00"/>
+        <minPower Value="88"/>
+        <maxPower Value="88"/>
+        <maxPower2 Value="20"/>
+        <speed Value="70"/>
+        <dotTime Value="1"/>
+        <priority Value="0"/>
+        <manualTabs Value="0"/>
+        <tabSize Value="0.2"/>
+        <tabCount Value="1"/>
+        <tabCountMax Value="1"/>
+        <tabSpacing Value="100"/>
+        <tabsUseSpacing Value="0"/>
+    </CutSetting>
+    <Shape Type="Rect" CutIndex="0" W="1197" H="100" Cr="0">
+        <XForm>1 0 0 1 801.5 850</XForm>
+    </Shape>
+    <Shape Type="Rect" CutIndex="0" W="103.99999" H="44" Cr="0">
+        <XForm>1 0 0 1 1108 878</XForm>
+    </Shape>
+    <Shape Type="Rect" CutIndex="0" W="103.99999" H="44" Cr="0">
+        <XForm>1 0 0 1 495 878</XForm>
+    </Shape>
+    <Notes ShowOnLoad="0" Notes=""/>
+</LightBurnProject>
